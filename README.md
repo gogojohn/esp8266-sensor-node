@@ -1,2 +1,2 @@
-# esp8266_sensor_node
+# esp8266-sensor-node
 ESP8266 wireless sensor node
