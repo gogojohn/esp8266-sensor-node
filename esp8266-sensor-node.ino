@@ -98,7 +98,7 @@ void handleJson() {
   String message = "{";
   message += "\"mac address\": \"" + MAC_ADDRESS + "\", ";
   message += "\"temperature\": {\"value\":" + String((int)temp_c) + ", \"units\":\"C\"},";
-  message += "\"humidity\": {\"value\":" + String((int)humidity) + ", \"units\":\"%\"}";
+  message += "\"relative humidity\": {\"value\":" + String((int)humidity) + ", \"units\":\"%\"}";
   message += "}";
   server.send(200, "application/json", message);
   digitalWrite(LED, 0);
