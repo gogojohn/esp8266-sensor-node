@@ -54,7 +54,7 @@ void getMeasurements() {
 }
 
 
-String getMacAddress(void){
+void getMacAddress(void){
   /* Reads the device's MAC address, and updates the MAC_ADRESS global variable.
   */
 
@@ -133,8 +133,6 @@ void setup(void){
   Serial.begin(115200); 
   WiFi.begin(SSID, PASSWORD);
   getMacAddress();
-  Serial.print("MAC address: ");
-  Serial.println(MAC_ADDRESS);
   Serial.println("");
 
   // Wait for connection
@@ -145,6 +143,9 @@ void setup(void){
   Serial.println("");
   Serial.print("Connected to ");
   Serial.println(SSID);
+  Serial.print("MAC address: ");
+  Serial.println(MAC_ADDRESS);
+
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
