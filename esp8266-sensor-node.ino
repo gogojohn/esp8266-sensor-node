@@ -65,6 +65,14 @@ void getMacAddress(void){
 }
 
 
+String getRSSI(void){
+  /* Reads the RSSI, and returns it.
+  */
+
+  return String((int32_t)WiFi.RSSI());
+}
+
+
 void handleRoot() {
   /* Site root request handler: returns an HTTP response, bearing details
      for how to interact with the sensor node.
@@ -89,14 +97,17 @@ void handleJson() {
      and containing the following elements:
      
      (1) MAC address of sensor node
-     (2) temperature measurement value, and units (in degrees Celcius)
-     (3) relative humidity value, and units
+     (2) RSSI of sensor node
+     (3) temperature measurement value, and units (in degrees Celcius)
+     (4) relative humidity value, and units
   */
   
   digitalWrite(LED, 1);
   getMeasurements();
+  String current_RSSI = getRSSI();
   String message = "{";
   message += "\"mac address\": \"" + MAC_ADDRESS + "\", ";
+  message += "\"RSSI\": {\"value\":" + current_RSSI + ", \"units\":\"dBm\"},";
   message += "\"temperature\": {\"value\":" + String((int)temp_c) + ", \"units\":\"C\"},";
   message += "\"relative humidity\": {\"value\":" + String((int)humidity) + ", \"units\":\"%\"}";
   message += "}";
