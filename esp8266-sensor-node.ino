@@ -9,7 +9,7 @@
 #define DHTPIN  4
 #define LED 13
 
-String MAC_ADDRESS;
+char MAC_ADDRESS[17];
 ESP8266WebServer server(80);
 
 // Initialize DHT sensor 
@@ -54,14 +54,23 @@ void getMeasurements() {
 }
 
 
-void getMacAddress(void){
-  /* Reads the device's MAC address, and updates the MAC_ADRESS global variable.
+void getWiFiMacAddress(void){
+  /*
+    Reads the device's Wi-Fi network interface controller (NIC) media access
+    control (MAC) address, and constructs a string representation of it which is
+    assigned to the MAC_ADDRESS global variable.
+    
+    The string is formatted as six groups of two zero-padded hexdecimal digits,
+    separated by colons, in transmission order.
+    
+    example: 01:23:45:67:89:AB
   */
 
   byte mac[6];
   
   WiFi.macAddress(mac);
-  MAC_ADDRESS = String(mac[0],16) + ":" + String(mac[1],16) + ":" + String(mac[2],16) + ":" + String(mac[3],16) + ":" + String(mac[4],16) + ":" + String(mac[5],16);
+  sprintf(MAC_ADDRESS, "%02X:%02X:%02X:%02X:%02X:%02X",
+          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
 
@@ -106,9 +115,9 @@ void handleJson() {
   getMeasurements();
   String current_RSSI = getRSSI();
   String message = "{";
-  message += "\"mac address\": \"" + MAC_ADDRESS + "\", ";
+  message += "\"MAC address\": \"" + String(MAC_ADDRESS) + "\", ";
   message += "\"RSSI\": {\"value\":" + current_RSSI + ", \"units\":\"dBm\"},";
-  message += "\"temperature\": {\"value\":" + String((int)temp_c) + ", \"units\":\"C\"},";
+  message += "\"temperature\": {\"value\":" + String((int)temp_c) + ", \"units\":\"degrees C\"},";
   message += "\"relative humidity\": {\"value\":" + String((int)humidity) + ", \"units\":\"%\"}";
   message += "}";
   server.send(200, "application/json", message);
@@ -143,7 +152,7 @@ void setup(void){
   digitalWrite(LED, 0);
   Serial.begin(115200); 
   WiFi.begin(SSID, PASSWORD);
-  getMacAddress();
+  getWiFiMacAddress();
   Serial.println("");
 
   // Wait for connection
@@ -152,7 +161,7 @@ void setup(void){
     Serial.print(".");
   }
   Serial.println("");
-  Serial.print("Connected to ");
+  Serial.print("Connected to: ");
   Serial.println(SSID);
   Serial.print("MAC address: ");
   Serial.println(MAC_ADDRESS);
