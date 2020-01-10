@@ -101,14 +101,16 @@ void handleRoot() {
 }
 
 
-void handleJson() {
-  /* JSON request handler: returns an HTTP response, bearing a JSON encoded string, 
-     and containing the following elements:
+void handleMeasurements() {
+  /*
+    REST API measurement data request handler: returns an HTTP response, bearing
+    a JSON-formatted string that contains the following elements:
      
-     (1) MAC address of sensor node
-     (2) RSSI of sensor node
-     (3) temperature measurement value, and units (in degrees Celcius)
-     (4) relative humidity value, and units
+    (1) MAC address of sensor node's Wi-Fi network interface controller
+    (2) received signal strength indicator (RSSI) measurement, of the Wi-Fi
+        access point that the sensor node is connected to, and units (in dBm)
+    (3) temperature measurement value, and units (in degrees Celcius)
+    (4) relative humidity value, and units (in %)
   */
   
   digitalWrite(LED, 1);
@@ -176,8 +178,8 @@ void setup(void){
   // Registers the site root handler.
   server.on("/", handleRoot);
 
-  // Registers the JSON handler.
-  server.on("/json", handleJson);
+  // Registers the /measurements REST API endpoint handler.
+  server.on("/measurements", handleMeasurements);
 
   // Registers the not found (404) handler.
   server.onNotFound(handleNotFound);
