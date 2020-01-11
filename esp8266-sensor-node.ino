@@ -74,11 +74,12 @@ void getWiFiMacAddress(void){
 }
 
 
-String getRSSI(void){
-  /* Reads the RSSI, and returns it.
+long getRSSI(void){
+  /*
+    Reads the RSSI, and returns it.
   */
 
-  return String((int32_t)WiFi.RSSI());
+  return WiFi.RSSI();
 }
 
 
@@ -112,16 +113,25 @@ void handleMeasurements() {
     (3) temperature measurement value, and units (in degrees Celcius)
     (4) relative humidity value, and units (in %)
   */
-  
+    
+  char message[1024];
+        
   digitalWrite(LED, 1);
   getMeasurements();
-  String current_RSSI = getRSSI();
-  String message = "{";
-  message += "\"MAC address\": \"" + String(MAC_ADDRESS) + "\", ";
-  message += "\"RSSI\": {\"value\":" + current_RSSI + ", \"units\":\"dBm\"},";
-  message += "\"temperature\": {\"value\":" + String((int)temp_c) + ", \"units\":\"degrees C\"},";
-  message += "\"relative humidity\": {\"value\":" + String((int)humidity) + ", \"units\":\"%\"}";
-  message += "}";
+  sprintf(message,
+    "{\n"
+    "\"MAC address\": \"%s\",\n"
+    "\"RSSI\": {\"value\": %ld, \"units\": \"dBm\"},\n"
+    "\"temperature\": {\"value\": %d, \"units\": \"degrees C\"},\n"
+    "\"relative humidity\": {\"value\": %d, \"units\": \"%%\"}\n"
+    "}",
+    MAC_ADDRESS,
+    // current_RSSI,
+    getRSSI(),
+    int(temp_c),
+    int(humidity)
+    );
+  
   server.send(200, "application/json", message);
   digitalWrite(LED, 0);
 }
