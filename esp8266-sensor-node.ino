@@ -78,9 +78,11 @@ void getWiFiMacAddress(void){
 }
 
 
-long getRSSI(void){
+long getWiFiRSSI(void){
   /*
-    Reads the RSSI, and returns it.
+    Reads the received signal strength indicator (RSSI), for the wireless access
+    point that the device's Wi-Fi interface is currently associated with, and
+    returns it.
   */
 
   return WiFi.RSSI();
@@ -143,7 +145,7 @@ void handleMeasurements() {
     "\"relative humidity\": {\"value\": %s, \"units\": \"%%\"}\n"
     "}",
     MAC_ADDRESS,
-    getRSSI(),
+    getWiFiRSSI(),
     temperature,
     relative_humidity
     );
