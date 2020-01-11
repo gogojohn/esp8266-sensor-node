@@ -12,27 +12,29 @@
 char MAC_ADDRESS[17];
 ESP8266WebServer server(80);
 
+
 // Initialize DHT sensor 
-// NOTE: For working with a faster than ATmega328p 16 MHz Arduino chip, like an ESP8266,
-// you need to increase the threshold for cycle counts considered a 1 or 0.
-// You can do this by passing a 3rd parameter for this threshold.  It's a bit
-// of fiddling to find the right value, but in general the faster the CPU the
-// higher the value.  The default for a 16mhz AVR is a value of 6.  For an
-// Arduino Due that runs at 84mhz a value of 30 works.
-// This is for the ESP8266 processor on ESP-01 
+// NOTE: For working with a faster than ATmega328p 16 MHz Arduino chip, like an
+// ESP8266, you need to increase the threshold for cycle counts considered a 1
+// or 0. You can do this by passing a 3rd parameter for this threshold.  It's a
+// bit of fiddling to find the right value, but in general the faster the CPU
+// the higher the value.
+//
+// The default for a 16mhz AVR is a value of 6. For an Arduino Due that runs at
+// 84mhz a value of 30 works. This is for the ESP8266 processor on ESP-01 
 DHT dht(DHTPIN, DHTTYPE, 11); // 11 works fine for ESP8266
  
-float humidity, temp_c;             // Values read from sensor
-// Generally, you should use "unsigned long" for variables that hold time
-unsigned long previousMillis = 0;   // will store last temp was read
-const long interval = 2000;         // interval at which to read sensor
+float humidity, temp_c;             // values read from sensor
+const long interval = 2000;         // interval at which to read from sensor
+unsigned long previousMillis = 0;   // last time that sensor was read
 
 
 void getMeasurements() {
-  /* Wait at least 2 seconds seconds between measurements.
-     if the difference between the current time and last time you read
-     the sensor is bigger than the interval you set, read the sensor
-     Works better than delay for things happening elsewhere also
+  /*
+    Wait at least 2 seconds seconds between measurements. If the difference
+    between the current time and last time you read the sensor is bigger than
+    the interval you set, read the sensor. Works better than delay for things
+    happening elsewhere also.
   */
   
   unsigned long currentMillis = millis();
@@ -42,9 +44,11 @@ void getMeasurements() {
     previousMillis = currentMillis;   
  
     // Reading temperature for humidity takes about 250 milliseconds!
-    // Sensor readings may also be up to 2 seconds 'old' (it's a very slow sensor)
+    // Sensor readings may also be up to 2 seconds 'old'
+    // (it's a very slow sensor)
     humidity = dht.readHumidity();      // Read humidity (percent)
     temp_c = dht.readTemperature();     // Read temperature as Celcius
+    
     // Check if any reads failed and exit early (to try again).
     if (isnan(humidity) || isnan(temp_c)) {
       Serial.println("Failed to read from DHT sensor!");
@@ -84,8 +88,9 @@ long getRSSI(void){
 
 
 void handleRoot() {
-  /* Site root request handler: returns an HTTP response, bearing details
-     for how to interact with the sensor node.
+  /*
+    Site root request handler: returns an HTTP response, bearing details for
+    how to interact with the sensor node.
   */
   
   digitalWrite(LED, 1);
@@ -118,7 +123,7 @@ void handleMeasurements() {
   char temperature[7];
   char relative_humidity[7];
         
-  // Turns the activity LED on, momentarily.
+  // Turns the activity LED on (briefly), while handling request.
   digitalWrite(LED, 1);
   
   // Acquires the temperature and humidity measurement data, from the sensor.
@@ -152,8 +157,9 @@ void handleMeasurements() {
 
 
 void handleNotFound(){
-  /* Not found request handler: returns an HTTP response, for URLs that do not exist
-     (e.g. 404: NOT FOUND).
+  /*
+    Not found request handler: returns an HTTP response, for URLs that do not
+    exist (e.g. 404: NOT FOUND).
   */
   
   digitalWrite(LED, 1);
