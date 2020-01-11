@@ -115,22 +115,38 @@ void handleMeasurements() {
   */
     
   char message[1024];
+  char temperature[7];
+  char relative_humidity[7];
         
+  // Turns the activity LED on, momentarily.
   digitalWrite(LED, 1);
+  
+  // Acquires the temperature and humidity measurement data, from the sensor.
   getMeasurements();
+  
+  // Converts the float values to a string, as the Arduino implementation of
+  // sprintf() doesn't work with float values.
+  dtostrf(temp_c, 4, 1, temperature);
+  dtostrf(humidity, 4, 1, relative_humidity);
+  
+  // Constructs the JSON-formatted message, to return in the HTTP response.
   sprintf(message,
     "{\n"
     "\"MAC address\": \"%s\",\n"
     "\"RSSI\": {\"value\": %ld, \"units\": \"dBm\"},\n"
-    "\"temperature\": {\"value\": %d, \"units\": \"degrees C\"},\n"
-    "\"relative humidity\": {\"value\": %d, \"units\": \"%%\"}\n"
+    "\"temperature\": {\"value\": %s, \"units\": \"degrees C\"},\n"
+    "\"relative humidity\": {\"value\": %s, \"units\": \"%%\"}\n"
     "}",
     MAC_ADDRESS,
     getRSSI(),
-    int(temp_c),
-    int(humidity)
+    temperature,
+    relative_humidity
     );
+  
+  // Sends the HTTP response, containing the constructed message payload.
   server.send(200, "application/json", message);
+  
+  // Turns the activity LED off, upon completion of request handling.
   digitalWrite(LED, 0);
 }
 
