@@ -126,12 +126,10 @@ void handleMeasurements() {
     "\"relative humidity\": {\"value\": %d, \"units\": \"%%\"}\n"
     "}",
     MAC_ADDRESS,
-    // current_RSSI,
     getRSSI(),
     int(temp_c),
     int(humidity)
     );
-  
   server.send(200, "application/json", message);
   digitalWrite(LED, 0);
 }
