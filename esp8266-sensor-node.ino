@@ -7,7 +7,9 @@
 
 #define DHTTYPE DHT22
 #define DHTPIN  4
-#define LED 13
+#define LED 0
+#define LED_ON 0
+#define LED_OFF 1
 
 char MAC_ADDRESS[17];
 ESP8266WebServer server(80);
@@ -95,7 +97,7 @@ void handleRoot() {
     how to interact with the sensor node.
   */
   
-  digitalWrite(LED, 1);
+  digitalWrite(LED, LED_ON);
   String message = "<!DOCTYPE html>";
   message += "<html>";
   message += "<body>";
@@ -105,7 +107,7 @@ void handleRoot() {
   message += "</body>";
   message += "</html>";
   server.send(200, "text/html", message);
-  digitalWrite(LED, 0);
+  digitalWrite(LED, LED_OFF);
 }
 
 
@@ -126,7 +128,7 @@ void handleMeasurements() {
   char relative_humidity[7];
         
   // Turns the activity LED on (briefly), while handling request.
-  digitalWrite(LED, 1);
+  digitalWrite(LED, LED_ON);
   
   // Acquires the temperature and humidity measurement data, from the sensor.
   getMeasurements();
@@ -154,7 +156,7 @@ void handleMeasurements() {
   server.send(200, "application/json", message);
   
   // Turns the activity LED off, upon completion of request handling.
-  digitalWrite(LED, 0);
+  digitalWrite(LED, LED_OFF);
 }
 
 
@@ -164,7 +166,7 @@ void handleNotFound(){
     exist (e.g. 404: NOT FOUND).
   */
   
-  digitalWrite(LED, 1);
+  digitalWrite(LED, LED_ON);
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -177,29 +179,38 @@ void handleNotFound(){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  digitalWrite(LED, 0);
+  digitalWrite(LED, LED_OFF);
 }
 
 
 void setup(void){
   pinMode(LED, OUTPUT);
-  digitalWrite(LED, 0);
+  digitalWrite(LED, LED_OFF);
   Serial.begin(115200); 
   WiFi.begin(SSID, PASSWORD);
   getWiFiMacAddress();
   Serial.println("");
 
-  // Wait for connection
+  // Waits for connection to Wi-Fi access point to be established, and flashes
+  // activity LED while waiting.
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    digitalWrite(LED, LED_ON);
+    delay(125);
+    digitalWrite(LED, LED_OFF);
+    delay(125);
+    digitalWrite(LED, LED_ON);
+    delay(125);
+    digitalWrite(LED, LED_OFF);
+    delay(250);
     Serial.print(".");
   }
+  
+  // Displays the Wi-Fi connection details, on the serial debug monitor.
   Serial.println("");
   Serial.print("Connected to: ");
   Serial.println(SSID);
   Serial.print("MAC address: ");
   Serial.println(MAC_ADDRESS);
-
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
