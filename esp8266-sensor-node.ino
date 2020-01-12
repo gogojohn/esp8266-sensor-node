@@ -191,7 +191,7 @@ void setup(void){
   getWiFiMacAddress();
   Serial.println("");
 
-  // Waits for connection to Wi-Fi access point to be established, and flash
+  // Waits for connection to Wi-Fi access point to be established, and flashes
   // activity LED while waiting.
   while (WiFi.status() != WL_CONNECTED) {
     digitalWrite(LED, LED_ON);
