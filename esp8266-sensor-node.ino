@@ -3,6 +3,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <DHT.h>
+#include "SemanticVersion.h"
 #include "WiFiAuth.h"
 
 #define DHTTYPE DHT22
