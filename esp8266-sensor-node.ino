@@ -190,10 +190,12 @@ void setup(void){
   Serial.begin(115200); 
   WiFi.begin(SSID, PASSWORD);
   getWiFiMacAddress();
-  Serial.println("");
+  Serial.println(F(""));
+  Serial.printf_P(PSTR("ESP8266 Sensor Node firmware version: %s\n"), FIRMWARE_SEMVER);
 
   // Waits for connection to Wi-Fi access point to be established, and flashes
   // activity LED while waiting.
+  Serial.print("Attempting to connect to WiFi ");
   while (WiFi.status() != WL_CONNECTED) {
     digitalWrite(LED, LED_ON);
     delay(125);
