@@ -78,7 +78,7 @@ void getWiFiIPAddress(void){
 }
 
 
-void getWiFiMacAddress(void){
+void getWiFiMACAddress(void){
   /*
     Reads the device's Wi-Fi network interface controller (NIC) media access
     control (MAC) address, and constructs a string representation of it which is
@@ -206,7 +206,7 @@ void setup(void){
   digitalWrite(LED, LED_OFF);
   Serial.begin(115200); 
   WiFi.begin(SSID, PASSWORD);
-  getWiFiMacAddress();
+  getWiFiMACAddress();
   Serial.println(F(""));
   Serial.printf_P(PSTR("ESP8266 Sensor Node firmware version: %s\n"), FIRMWARE_SEMVER);
 
