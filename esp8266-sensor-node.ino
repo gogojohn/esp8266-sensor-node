@@ -13,6 +13,7 @@
 #define LED_OFF 1
 
 char MAC_ADDRESS[17];
+char IP_ADDRESS[16];
 ESP8266WebServer server(80);
 
 
@@ -58,6 +59,21 @@ void getMeasurements() {
       return;
     }
   }
+}
+
+
+void getWiFiIPAddress(void){
+    /*
+      Reads the device's assigned IP address, and constructts a string
+      representation of it which is assigned to the IP_ADDRESS global variable.
+    
+      The string is formatted as 4 octets of decimal digits.
+    
+      example: 192.168.0.1
+    */
+    
+    IPAddress ip = WiFi.localIP();
+    sprintf(IP_ADDRESS, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 }
 
 
@@ -209,14 +225,15 @@ void setup(void){
   }
   
   // Displays the Wi-Fi connection details, on the serial debug monitor.
-  Serial.println("");
-  Serial.print("Connected to: ");
-  Serial.println(SSID);
-  Serial.print("MAC address: ");
-  Serial.println(MAC_ADDRESS);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
+  Serial.printf_P(PSTR("\nConnected to: %s\n"), SSID);
+  Serial.printf_P(PSTR("MAC address: %s\n"), MAC_ADDRESS);
+  // Serial.print("IP address: ");
+  // Serial.println(WiFi.localIP());
+  // IP_ADDRESS = WiFi.localIP().toString();
+  getWiFiIPAddress();
+  Serial.printf_P(PSTR("IP address: %s\n"), IP_ADDRESS);
+      
+  // Starts the multicast DNS responder.
   if (MDNS.begin("esp8266")) {
     Serial.println("MDNS responder started");
   }
