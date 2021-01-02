@@ -1,8 +1,9 @@
+#include <DHT.h>
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
-#include <DHT.h>
+#include <WiFiClient.h>
+
 #include "SemanticVersion.h"
 #include "WiFiAuth.h"
 
@@ -223,14 +224,13 @@ void setup(void){
     delay(250);
     Serial.print(".");
   }
+
+  // Stores the string representation of the assigned IP address.
+  getWiFiIPAddress();
   
   // Displays the Wi-Fi connection details, on the serial debug monitor.
   Serial.printf_P(PSTR("\nConnected to: %s\n"), SSID);
   Serial.printf_P(PSTR("MAC address: %s\n"), MAC_ADDRESS);
-  // Serial.print("IP address: ");
-  // Serial.println(WiFi.localIP());
-  // IP_ADDRESS = WiFi.localIP().toString();
-  getWiFiIPAddress();
   Serial.printf_P(PSTR("IP address: %s\n"), IP_ADDRESS);
       
   // Starts the multicast DNS responder.
