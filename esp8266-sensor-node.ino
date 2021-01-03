@@ -2,10 +2,14 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+#include <NTPClient.h>
+#include <TimeLib.h>
 #include <WiFiClient.h>
+#include <WiFiUdp.h>
 
 #include "SemanticVersion.h"
 #include "WiFiAuth.h"
+
 
 #define DHTTYPE DHT22
 #define DHTPIN  4
@@ -13,10 +17,20 @@
 #define LED_ON 0
 #define LED_OFF 1
 
-char MAC_ADDRESS[17];
+
 char IP_ADDRESS[16];
+char MAC_ADDRESS[18];
+char DATE_TIME[21];
+
+// Instantiates the ESP8266 Web Server which will handle incoming HTTP requests
 ESP8266WebServer server(80);
 
+// Instantiates the NTP client which will handle time synchronization
+WiFiUDP ntpUDP;
+static const char ntp_server_pool[] = "pool.ntp.org";
+static const int offset_s = 0;
+static const unsigned int interval_ms = 60000;
+NTPClient timeClient(ntpUDP, ntp_server_pool, offset_s, interval_ms);
 
 // Initialize DHT sensor 
 // NOTE: For working with a faster than ATmega328p 16 MHz Arduino chip, like an
@@ -32,6 +46,34 @@ DHT dht(DHTPIN, DHTTYPE, 11); // 11 works fine for ESP8266
 float humidity, temp_c;             // values read from sensor
 const long interval = 2000;         // interval at which to read from sensor
 unsigned long previousMillis = 0;   // last time that sensor was read
+
+
+void getISO8601DateTimeString() {
+  /*
+    Updates the value of DATE_TIME, which stores the current ISO 8601 formatted
+    datetime string.
+    
+    example: 2021-01-01T03:36:48Z
+  */
+    
+  unsigned long epoch_time;
+      
+  // Syncronizes the current time (if necessary), determines the epoch time.
+  timeClient.update();
+  epoch_time = timeClient.getEpochTime();
+
+  if (epoch_time > 0) {
+    TimeElements tm;
+    breakTime(epoch_time, tm);
+    sprintf(DATE_TIME, "%i-%02i-%02iT%02i:%02i:%02iZ",
+      tmYearToCalendar(tm.Year),
+      tm.Month,
+      tm.Day,
+      tm.Hour,
+      tm.Minute,
+      tm.Second);
+  }
+}
 
 
 void getMeasurements() {
@@ -126,6 +168,72 @@ void handleRoot() {
   message += "</html>";
   server.send(200, "text/html", message);
   digitalWrite(LED, LED_OFF);
+}
+
+
+void handleHealth() {
+  /*
+    REST API health endpoint request handler: returns an HTTP response, bearing
+    a JSON-formatted string that contains the following elements:
+    
+    (1) more details here
+  */
+    
+  char message[1024];
+  
+  // Turns the activity LED on (briefly), while handling request.
+  digitalWrite(LED, LED_ON);
+  
+  // Syncronizes the current time (if necessary), and builds the JSON message
+  // payload for the HTTP response.
+  timeClient.update();
+  getISO8601DateTimeString();
+    
+  sprintf(message,
+    "{\n"
+    "  \"status\": \"pass\"\n"
+    "  \"version\": \"1\"\n"
+    "  \"releaseID\": \"%s\"\n"
+    "  \"notes\": [\"\"]\n"
+    "  \"output\": \"\"\n"
+    "  \"serviceID\": \"\"\n"
+    "  \"description\": \"health of remote sensor node\"\n"
+    
+    "  \"checks\": {\n"
+    "    \"uptime\": [\n"
+    "      {\n"
+    "        \"componentType\": \"system\",\n"
+    "        \"observedValue\": %i,\n"
+    "        \"observedUnit\": \"ms\",\n"
+    "        \"status\": \"pass\",\n"
+    "        \"time\": \"%s\"\n"
+    "      }\n"
+    "    ],\n"
+    "    \"memory:utilization\": [\n"
+    "      {\n"
+    "        \"componentId\": \"\",\n"
+    "        \"componentType\": \"system\",\n"
+    "        \"observedValue\": %i,\n"
+    "        \"observedUnit\": \"B\",\n"
+    "        \"status\": \"pass\",\n"
+    "        \"time\": \"%s\",\n"
+    "        \"output\": \"\"\n"
+    "      }\n"
+    "    ]\n"
+    "  }\n"
+    "}",
+    FIRMWARE_SEMVER,
+    millis(),
+    DATE_TIME,
+    ESP.getFreeHeap(),
+    DATE_TIME
+  );
+    
+  // Sends the HTTP response, containing the constructed message payload.
+  server.send(200, "application/health+json", message);
+
+  // Turns the activity LED off, upon completion of request handling.
+  digitalWrite(LED, LED_OFF);  
 }
 
 
@@ -235,11 +343,14 @@ void setup(void){
       
   // Starts the multicast DNS responder.
   if (MDNS.begin("esp8266")) {
-    Serial.println("MDNS responder started");
+    Serial.println(F("MDNS responder started"));
   }
 
   // Registers the site root handler.
   server.on("/", handleRoot);
+
+  // Registers the /health RESP API endpoint handler.
+  server.on("/health", handleHealth);
 
   // Registers the /measurements REST API endpoint handler.
   server.on("/measurements", handleMeasurements);
@@ -249,7 +360,14 @@ void setup(void){
 
   // Starts the HTTP server.
   server.begin();
-  Serial.println("HTTP server started");
+  Serial.println(F("HTTP server started"));
+  
+  // Starts the NTP client, and synchronizes the time.
+  timeClient.begin();
+  // setSyncProvider(timeClient.getEpochTime);
+  // setSyncInterval(interval_ms);
+  timeClient.update();
+  Serial.println(F("NTP client started"));
 }
 
 
