@@ -1,4 +1,5 @@
 #include <DHT.h>
+#include <DHT_U.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -12,7 +13,7 @@
 
 
 #define DHTTYPE DHT22
-#define DHTPIN  4
+#define DHTPIN 5
 #define LED 0
 #define LED_ON 0
 #define LED_OFF 1
@@ -32,17 +33,8 @@ static const int offset_s = 0;
 static const unsigned int interval_ms = 60000;
 NTPClient timeClient(ntpUDP, ntp_server_pool, offset_s, interval_ms);
 
-// Initialize DHT sensor 
-// NOTE: For working with a faster than ATmega328p 16 MHz Arduino chip, like an
-// ESP8266, you need to increase the threshold for cycle counts considered a 1
-// or 0. You can do this by passing a 3rd parameter for this threshold.  It's a
-// bit of fiddling to find the right value, but in general the faster the CPU
-// the higher the value.
-//
-// The default for a 16mhz AVR is a value of 6. For an Arduino Due that runs at
-// 84mhz a value of 30 works. This is for the ESP8266 processor on ESP-01 
-DHT dht(DHTPIN, DHTTYPE, 11); // 11 works fine for ESP8266
- 
+// Instantiates the DHT sensor which will perform measurements
+DHT_Unified dht(DHTPIN, DHTTYPE);
 float humidity, temp_c;             // values read from sensor
 const long interval = 2000;         // interval at which to read from sensor
 unsigned long previousMillis = 0;   // last time that sensor was read
@@ -78,29 +70,46 @@ void getISO8601DateTimeString() {
 
 void getMeasurements() {
   /*
+    Attempts to acquire temperature and relative humidity measurements, and
+    stores the values in for subsequent use.
+  */
+  
+  unsigned long currentMillis = millis();
+ 
+  /*
     Wait at least 2 seconds seconds between measurements. If the difference
     between the current time and last time you read the sensor is bigger than
     the interval you set, read the sensor. Works better than delay for things
     happening elsewhere also.
   */
-  
-  unsigned long currentMillis = millis();
- 
   if(currentMillis - previousMillis >= interval) {
     // save the last time you read the sensor 
     previousMillis = currentMillis;   
- 
-    // Reading temperature for humidity takes about 250 milliseconds!
-    // Sensor readings may also be up to 2 seconds 'old'
-    // (it's a very slow sensor)
-    humidity = dht.readHumidity();      // Read humidity (percent)
-    temp_c = dht.readTemperature();     // Read temperature as Celcius
-    
-    // Check if any reads failed and exit early (to try again).
-    if (isnan(humidity) || isnan(temp_c)) {
-      Serial.println("Failed to read from DHT sensor!");
-      return;
+
+    // Gets the temperature event and stores its value.
+    sensors_event_t event;
+    dht.temperature().getEvent(&event);
+    if (isnan(event.temperature)) {
+      Serial.println(F("Error reading temperature!"));
     }
+    else {
+      // Serial.print(F("Temperature: "));
+      // Serial.print(event.temperature);
+      // Serial.println(F("°C"));
+      temp_c = event.temperature;
+    }
+
+    // Gets the humidity event and stores its value.
+    dht.humidity().getEvent(&event);
+    if (isnan(event.relative_humidity)) {
+      Serial.println(F("Error reading humidity!"));
+    }
+    else {
+      // Serial.print(F("Humidity: "));
+      // Serial.print(event.relative_humidity);
+      // Serial.println(F("%"));
+      humidity = event.relative_humidity;
+    }    
   }
 }
 
@@ -176,7 +185,9 @@ void handleHealth() {
     REST API health endpoint request handler: returns an HTTP response, bearing
     a JSON-formatted string that contains the following elements:
     
-    (1) more details here
+    (1) general health status
+    (2) uptime status
+    (3) memory utilization
   */
     
   char message[1024];
@@ -191,32 +202,32 @@ void handleHealth() {
     
   sprintf(message,
     "{\n"
-    "  \"status\": \"pass\"\n"
-    "  \"version\": \"1\"\n"
-    "  \"releaseID\": \"%s\"\n"
-    "  \"notes\": [\"\"]\n"
-    "  \"output\": \"\"\n"
-    "  \"serviceID\": \"\"\n"
-    "  \"description\": \"health of remote sensor node\"\n"
+    "  \"status\": \"pass\",\n"
+    "  \"version\": \"1\",\n"
+    "  \"releaseID\": \"%s\",\n"                    // FIRMWARE_SEMVER
+    "  \"notes\": [\"\"],\n"
+    "  \"output\": \"\",\n"
+    "  \"serviceID\": \"\",\n"
+    "  \"description\": \"health of remote sensor node\",\n"
     
     "  \"checks\": {\n"
     "    \"uptime\": [\n"
     "      {\n"
     "        \"componentType\": \"system\",\n"
-    "        \"observedValue\": %i,\n"
+    "        \"observedValue\": %lu,\n"             // millis()
     "        \"observedUnit\": \"ms\",\n"
     "        \"status\": \"pass\",\n"
-    "        \"time\": \"%s\"\n"
+    "        \"time\": \"%s\"\n"                    // DATE_TIME
     "      }\n"
     "    ],\n"
     "    \"memory:utilization\": [\n"
     "      {\n"
     "        \"componentId\": \"\",\n"
     "        \"componentType\": \"system\",\n"
-    "        \"observedValue\": %i,\n"
+    "        \"observedValue\": %u,\n"              // ESP.getFreeHeap()
     "        \"observedUnit\": \"B\",\n"
     "        \"status\": \"pass\",\n"
-    "        \"time\": \"%s\",\n"
+    "        \"time\": \"%s\",\n"                   // DATE_TIME
     "        \"output\": \"\"\n"
     "      }\n"
     "    ]\n"
@@ -267,10 +278,10 @@ void handleMeasurements() {
   // Constructs the JSON-formatted message, to return in the HTTP response.
   sprintf(message,
     "{\n"
-    "\"MAC address\": \"%s\",\n"
-    "\"RSSI\": {\"value\": %ld, \"units\": \"dBm\"},\n"
-    "\"temperature\": {\"value\": %s, \"units\": \"degrees C\"},\n"
-    "\"relative humidity\": {\"value\": %s, \"units\": \"%%\"}\n"
+    "  \"MAC address\": \"%s\",\n"
+    "  \"RSSI\": {\"value\": %ld, \"units\": \"dBm\"},\n"
+    "  \"temperature\": {\"value\": %s, \"units\": \"degrees C\"},\n"
+    "  \"relative humidity\": {\"value\": %s, \"units\": \"%%\"}\n"
     "}",
     MAC_ADDRESS,
     getWiFiRSSI(),
@@ -312,15 +323,22 @@ void handleNotFound(){
 void setup(void){
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LED_OFF);
-  Serial.begin(115200); 
-  WiFi.begin(SSID, PASSWORD);
-  getWiFiMACAddress();
+  
+  // Starts the serial port object, then prints the firmware version to the
+  // serial debug port.
+  Serial.begin(115200);
   Serial.println(F(""));
-  Serial.printf_P(PSTR("ESP8266 Sensor Node firmware version: %s\n"), FIRMWARE_SEMVER);
-
-  // Waits for connection to Wi-Fi access point to be established, and flashes
-  // activity LED while waiting.
-  Serial.print("Attempting to connect to WiFi ");
+  Serial.printf_P(
+      PSTR("ESP8266 Sensor Node firmware version: %s\n"),
+      FIRMWARE_SEMVER);
+  
+  // Starts the DHT sensor object.
+  dht.begin();
+  
+  // Starts the Wifi object, then waits for connection to Wi-Fi access point to
+  // be established, and flashes activity LED while waiting.
+  WiFi.begin(SSID, PASSWORD);
+  Serial.print(F("Attempting to connect to WiFi"));
   while (WiFi.status() != WL_CONNECTED) {
     digitalWrite(LED, LED_ON);
     delay(125);
@@ -330,8 +348,11 @@ void setup(void){
     delay(125);
     digitalWrite(LED, LED_OFF);
     delay(250);
-    Serial.print(".");
+    Serial.print(F("."));
   }
+
+  // Stores the string representation of the MAC address.
+  getWiFiMACAddress();
 
   // Stores the string representation of the assigned IP address.
   getWiFiIPAddress();
