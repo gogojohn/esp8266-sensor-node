@@ -43,7 +43,7 @@ unsigned long previousMillis = 0;   // last time that sensor was read
 
 void getISO8601DateTimeString(char *date_time_ptr) {
   /*
-    Updates the value of variable, pointed to by the date_time_ptr argument,
+    Updates the value of the variable (pointed to by the date_time_ptr argument)
     where the current ISO 8601 formatted datetime string will be stored.
     
     example: 2021-01-01T03:36:48Z
@@ -117,7 +117,7 @@ void getMeasurements() {
 
 void getWiFiIPAddress(){
     /*
-      Reads the device's assigned IP address, and constructts a string
+      Reads the device's assigned IP address, and constructs a string
       representation of it which is assigned to the IP_ADDRESS global variable.
     
       The string is formatted as 4 octets of decimal digits.
