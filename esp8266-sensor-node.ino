@@ -43,8 +43,8 @@ unsigned long previousMillis = 0;   // last time that sensor was read
 
 void getISO8601DateTimeString(char *date_time_ptr) {
   /*
-    Updates the value of DATE_TIME, which stores the current ISO 8601 formatted
-    datetime string.
+    Updates the value of variable, pointed to by the date_time_ptr argument,
+    where the current ISO 8601 formatted datetime string will be stored.
     
     example: 2021-01-01T03:36:48Z
   */
@@ -58,7 +58,6 @@ void getISO8601DateTimeString(char *date_time_ptr) {
   if (epoch_time > 0) {
     TimeElements tm;
     breakTime(epoch_time, tm);
-    // sprintf(DATE_TIME, "%i-%02i-%02iT%02i:%02i:%02iZ",
     sprintf(date_time_ptr, "%i-%02i-%02iT%02i:%02i:%02iZ",
       tmYearToCalendar(tm.Year),
       tm.Month,
