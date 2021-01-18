@@ -21,7 +21,8 @@
 
 char IP_ADDRESS[16];
 char MAC_ADDRESS[18];
-char DATE_TIME[21];
+char DATE_TIME_START[21];
+char DATE_TIME_CURRENT[21];
 
 // Instantiates the ESP8266 Web Server which will handle incoming HTTP requests
 ESP8266WebServer server(80);
@@ -40,7 +41,7 @@ const long interval = 2000;         // interval at which to read from sensor
 unsigned long previousMillis = 0;   // last time that sensor was read
 
 
-void getISO8601DateTimeString() {
+void getISO8601DateTimeString(char *date_time_ptr) {
   /*
     Updates the value of DATE_TIME, which stores the current ISO 8601 formatted
     datetime string.
@@ -57,14 +58,15 @@ void getISO8601DateTimeString() {
   if (epoch_time > 0) {
     TimeElements tm;
     breakTime(epoch_time, tm);
-    sprintf(DATE_TIME, "%i-%02i-%02iT%02i:%02i:%02iZ",
+    // sprintf(DATE_TIME, "%i-%02i-%02iT%02i:%02i:%02iZ",
+    sprintf(date_time_ptr, "%i-%02i-%02iT%02i:%02i:%02iZ",
       tmYearToCalendar(tm.Year),
       tm.Month,
       tm.Day,
       tm.Hour,
       tm.Minute,
       tm.Second);
-  }
+  }  
 }
 
 
@@ -114,7 +116,7 @@ void getMeasurements() {
 }
 
 
-void getWiFiIPAddress(void){
+void getWiFiIPAddress(){
     /*
       Reads the device's assigned IP address, and constructts a string
       representation of it which is assigned to the IP_ADDRESS global variable.
@@ -126,10 +128,11 @@ void getWiFiIPAddress(void){
     
     IPAddress ip = WiFi.localIP();
     sprintf(IP_ADDRESS, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    
 }
 
 
-void getWiFiMACAddress(void){
+void getWiFiMACAddress(){
   /*
     Reads the device's Wi-Fi network interface controller (NIC) media access
     control (MAC) address, and constructs a string representation of it which is
@@ -149,7 +152,7 @@ void getWiFiMACAddress(void){
 }
 
 
-long getWiFiRSSI(void){
+long getWiFiRSSI(){
   /*
     Reads the received signal strength indicator (RSSI), for the wireless access
     point that the device's Wi-Fi interface is currently associated with, and
@@ -198,7 +201,7 @@ void handleHealth() {
   // Syncronizes the current time (if necessary), and builds the JSON message
   // payload for the HTTP response.
   timeClient.update();
-  getISO8601DateTimeString();
+  getISO8601DateTimeString(DATE_TIME_CURRENT);
     
   sprintf(message,
     "{\n"
@@ -235,9 +238,9 @@ void handleHealth() {
     "}",
     FIRMWARE_SEMVER,
     millis(),
-    DATE_TIME,
+    DATE_TIME_CURRENT,
     ESP.getFreeHeap(),
-    DATE_TIME
+    DATE_TIME_CURRENT
   );
     
   // Sends the HTTP response, containing the constructed message payload.
@@ -320,7 +323,71 @@ void handleNotFound(){
 }
 
 
-void setup(void){
+void registerHTTPEndpointHandlers(){
+  /*
+    Regsiters each of the HTTP endpoint handlers with the HTTP server.
+  */
+  
+  // Registers the site root handler.
+  server.on("/", handleRoot);
+
+  // Registers the /health RESP API endpoint handler.
+  server.on("/health", handleHealth);
+
+  // Registers the /measurements REST API endpoint handler.
+  server.on("/measurements", handleMeasurements);
+
+  // Registers the not found (404) handler.
+  server.onNotFound(handleNotFound);
+}
+
+
+void startHTTPServer(){
+  /*
+    Starts the HTTP server.
+  */
+  
+  server.begin();
+  timeClient.update();
+  getISO8601DateTimeString(DATE_TIME_CURRENT);
+  Serial.printf_P(
+      PSTR("HTTP server started: %s\n"),
+      DATE_TIME_CURRENT);  
+}
+
+void startMDNSResponder(){
+  /*
+    Starts the Multicast DNS (MDNS) responder.
+  */
+  
+  if (MDNS.begin("esp8266")) {
+    timeClient.update();
+    getISO8601DateTimeString(DATE_TIME_CURRENT);
+    Serial.printf_P(
+        PSTR("MDNS responder started: %s\n"),
+        DATE_TIME_CURRENT);
+  }
+}
+
+
+void startNTPClient(){
+  /*
+    Starts the NTP client, synchronizes the time, and then stores the start
+    time for the purpose of knowing how long the node has been running for
+    since it was last (re)started.
+  */
+
+  // Starts the NTP client, and synchronizes the time.
+  timeClient.begin();
+  timeClient.update();
+  getISO8601DateTimeString(DATE_TIME_START);
+  Serial.printf_P(
+      PSTR("NTP client started: %s\n"),
+      DATE_TIME_START);
+}
+
+
+void setup(){
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LED_OFF);
   
@@ -361,38 +428,22 @@ void setup(void){
   Serial.printf_P(PSTR("\nConnected to: %s\n"), SSID);
   Serial.printf_P(PSTR("MAC address: %s\n"), MAC_ADDRESS);
   Serial.printf_P(PSTR("IP address: %s\n"), IP_ADDRESS);
+  
+  // Starts the NTP client, and synchronizes the time.  
+  startNTPClient();
       
   // Starts the multicast DNS responder.
-  if (MDNS.begin("esp8266")) {
-    Serial.println(F("MDNS responder started"));
-  }
+  startMDNSResponder();
 
-  // Registers the site root handler.
-  server.on("/", handleRoot);
-
-  // Registers the /health RESP API endpoint handler.
-  server.on("/health", handleHealth);
-
-  // Registers the /measurements REST API endpoint handler.
-  server.on("/measurements", handleMeasurements);
-
-  // Registers the not found (404) handler.
-  server.onNotFound(handleNotFound);
+  // Registers the HTTP endpoint handlers.
+  registerHTTPEndpointHandlers();
 
   // Starts the HTTP server.
-  server.begin();
-  Serial.println(F("HTTP server started"));
-  
-  // Starts the NTP client, and synchronizes the time.
-  timeClient.begin();
-  // setSyncProvider(timeClient.getEpochTime);
-  // setSyncInterval(interval_ms);
-  timeClient.update();
-  Serial.println(F("NTP client started"));
+  startHTTPServer();
 }
 
 
-void loop(void){
+void loop(){
   server.handleClient();
 }
 
