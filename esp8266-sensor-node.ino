@@ -134,8 +134,8 @@ void getWiFiIPAddress(){
 void getWiFiMACAddress(){
   /*
     Reads the device's Wi-Fi network interface controller (NIC) media access
-    control (MAC) address, and constructs a string representation of it which is
-    assigned to the MAC_ADDRESS global variable.
+    control (MAC) address, and constructs a string representation of it which
+    is assigned to the MAC_ADDRESS global variable.
     
     The string is formatted as six groups of two zero-padded hexdecimal digits,
     separated by colons, in transmission order.
@@ -219,7 +219,7 @@ void handleHealth() {
     "        \"observedValue\": %lu,\n"             // millis()
     "        \"observedUnit\": \"ms\",\n"
     "        \"status\": \"pass\",\n"
-    "        \"time\": \"%s\"\n"                    // DATE_TIME
+    "        \"time\": \"%s\"\n"                    // DATE_TIME_CURRENT
     "      }\n"
     "    ],\n"
     "    \"memory:utilization\": [\n"
@@ -229,7 +229,7 @@ void handleHealth() {
     "        \"observedValue\": %u,\n"              // ESP.getFreeHeap()
     "        \"observedUnit\": \"B\",\n"
     "        \"status\": \"pass\",\n"
-    "        \"time\": \"%s\",\n"                   // DATE_TIME
+    "        \"time\": \"%s\",\n"                   // DATE_TIME_CURRENT
     "        \"output\": \"\"\n"
     "      }\n"
     "    ]\n"
@@ -324,7 +324,7 @@ void handleNotFound(){
 
 void registerHTTPEndpointHandlers(){
   /*
-    Regsiters each of the HTTP endpoint handlers with the HTTP server.
+    Registers each of the HTTP endpoint handlers with the HTTP server.
   */
   
   // Registers the site root handler.
