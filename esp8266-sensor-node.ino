@@ -18,7 +18,7 @@
 #define LED_ON 0
 #define LED_OFF 1
 
-// Enables ESP8266 to read module supply voltage (Vcc)
+// Enables ESP8266 to read the module supply voltage (Vcc)
 ADC_MODE(ADC_VCC);
 
 char IP_ADDRESS[16];
@@ -192,6 +192,7 @@ void handleHealth() {
     (1) general health status
     (2) uptime status
     (3) memory utilization
+    (4) module supply voltage (Vcc)
   */
     
   char message[1024];
