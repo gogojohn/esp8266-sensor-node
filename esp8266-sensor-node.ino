@@ -18,6 +18,8 @@
 #define LED_ON 0
 #define LED_OFF 1
 
+// Enables ESP8266 to read module supply voltage (Vcc)
+ADC_MODE(ADC_VCC);
 
 char IP_ADDRESS[16];
 char MAC_ADDRESS[18];
@@ -201,9 +203,19 @@ void handleHealth() {
   // payload for the HTTP response.
   timeClient.update();
   getISO8601DateTimeString(DATE_TIME_CURRENT);
+  
+  
+  // Acquires the current ESP8266 module supply voltage (Vcc) and then
+  // converts the float value to a string, as the Arduino implementation of
+  // sprintf() doesn't work with float values.
+  float rawVcc = ((float)ESP.getVcc())/1024;
+  char convertedVcc[6];
+  dtostrf(rawVcc, 4, 3, convertedVcc);
+  
     
   sprintf(message,
     "{\n"
+      
     "  \"status\": \"pass\",\n"
     "  \"version\": \"1\",\n"
     "  \"releaseID\": \"%s\",\n"                    // FIRMWARE_SEMVER
@@ -222,6 +234,7 @@ void handleHealth() {
     "        \"time\": \"%s\"\n"                    // DATE_TIME_CURRENT
     "      }\n"
     "    ],\n"
+      
     "    \"memory:utilization\": [\n"
     "      {\n"
     "        \"componentId\": \"\",\n"
@@ -232,13 +245,28 @@ void handleHealth() {
     "        \"time\": \"%s\",\n"                   // DATE_TIME_CURRENT
     "        \"output\": \"\"\n"
     "      }\n"
-    "    ]\n"
+    "    ],\n"
+        
+    "    \"power:supply-voltage\": [\n"
+    "      {\n"
+    "        \"componentId\": \"\",\n"
+    "        \"componentType\": \"system\",\n"
+    "        \"observedValue\": %s,\n"              // convertedVcc
+    "        \"observedUnit\": \"V\",\n"
+    "        \"status\": \"pass\",\n"
+    "        \"time\": \"%s\",\n"                   // DATE_TIME_CURRENT
+    "        \"output\": \"\"\n"
+    "      }\n"
+    "    ]\n" 
     "  }\n"
+      
     "}",
     FIRMWARE_SEMVER,
     millis(),
     DATE_TIME_CURRENT,
     ESP.getFreeHeap(),
+    DATE_TIME_CURRENT,
+    convertedVcc,
     DATE_TIME_CURRENT
   );
     
